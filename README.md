@@ -1,6 +1,6 @@
 mmo-cr-copilot-dashboard-tests
 
-The template to create a service that runs WDIO tests against an environment.
+A WebdriverIO journey test suite for the MMO Catch Recording Copilot dashboard.
 
 - [Local](#local)
   - [Requirements](#requirements)
@@ -8,8 +8,10 @@ The template to create a service that runs WDIO tests against an environment.
   - [Setup](#setup)
   - [Running local tests](#running-local-tests)
   - [Debugging local tests](#debugging-local-tests)
+- [What the suite covers](#what-the-suite-covers)
 - [Production](#production)
   - [Debugging tests](#debugging-tests)
+- [BrowserStack](#browserstack)
 - [Licence](#licence)
   - [About the licence](#about-the-licence)
 
@@ -38,10 +40,16 @@ npm install
 
 ### Running local tests
 
-Start application you are testing on the url specified in `baseUrl` [wdio.local.conf.js](wdio.local.conf.js)
+The suite runs against the deployed dashboard, so nothing needs to be started locally:
 
 ```bash
 npm run test:local
+```
+Point the env variable somewhere else with
+`DASHBOARD_BASE_URL`, which every wdio config honours:
+
+```bash
+DASHBOARD_BASE_URL=https://example.com npm run test:local
 ```
 
 ### Debugging local tests
@@ -49,6 +57,29 @@ npm run test:local
 ```bash
 npm run test:local:debug
 ```
+
+## What the suite covers
+
+[test/specs/dashboard.e2e.js](test/specs/dashboard.e2e.js) holds eleven smoke-level journeys, driven through
+[test/page-objects/dashboard.page.js](test/page-objects/dashboard.page.js):
+
+1. Page shell — title, `#root`, skip link and document language
+2. Service header — logo, heading, tagline, sprint selector, settings and theme controls
+3. Global overview landing view and breadcrumb
+4. All eight dashboard sections render
+5. Headline KPI cards resolve past their loading state
+6. Live commit stream renders rows in its accessible table
+7. Quality gate summary and the three persona cards
+8. Sprint selector opens its quick ranges
+9. Theme toggle flips `data-theme` between light and dark
+10. Repository drill-down updates the heading and breadcrumb, and Back returns
+11. Settings shows the persona mapping and audit log tables
+
+All of it is read-only — no test writes a persona mapping or an audit log entry.
+
+The dashboard renders `Loading…` placeholders until the analytics backend responds, so `waitForDataToLoad()` runs in
+`beforeEach`. Several headings are upper-cased by CSS, which means `getText()` returns upper case; the page object
+locates those by DOM text with XPath instead.
 
 ## Production
 
@@ -91,6 +122,20 @@ If you want to use the repository exclusively for running docker composed based 
 Two wdio configuration files are provided to help run the tests using BrowserStack in both a GitHub workflow (`wdio.github.browserstack.conf.js`) and from the CDP Portal (`wdio.browserstack.conf.js`).
 They can be run from npm using the `npm run test:browserstack` (for running via portal) and `npm run test:github:browserstack` (from GitHib runner).
 See the CDP Documentation for more details.
+
+Both configs read `BROWSERSTACK_USER` and `BROWSERSTACK_KEY`. Use a BrowserStack **service account**, never a
+personal login token, and never commit the values — this repository is public.
+
+The same credentials have to be stored in two places, because GitHub Actions secrets never reach a container running on
+the platform and CDP Portal secrets are not visible to GitHub:
+
+- **GitHub runs** — `Settings -> Secrets and variables -> Actions`, then bind them to the env of the step that runs the
+  tests.
+- **Portal runs** — the **Secrets** tab on the test suite in the CDP Portal. A redeploy is required before a new or
+  changed secret takes effect.
+
+Outbound traffic from CDP environments goes through the Squid proxy; `.browserstack.com` is on the default non-prod
+allow list, so no `cdp-tenant-config` change is needed.
 
 ## Licence
 

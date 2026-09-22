@@ -34,5 +34,15 @@ export default defineConfig([
     }
   },
 
+  {
+    // Callbacks passed to browser.execute() run in the page, so they see DOM globals.
+    files: ['test/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser
+      }
+    }
+  },
+
   eslintConfigPrettier
 ])
