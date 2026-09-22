@@ -1,47 +1,60 @@
 import fs from 'node:fs'
 
-/**
- * Proxy enabled using NODE_USE_ENV_PROXY=1
- * This is required for the test suite to be able to talk to BrowserStack.
- */
-
 const oneMinute = 60 * 1000
+
+const user = process.env.BROWSERSTACK_USERNAME || process.env.BROWSERSTACK_USER
+const key = process.env.BROWSERSTACK_ACCESS_KEY || process.env.BROWSERSTACK_KEY
+const projectName = process.env.BROWSERSTACK_PROJECT_NAME || 'MMO CR Copilot Dashboard Tests'
+const buildName =
+  process.env.BROWSERSTACK_BUILD_NAME ||
+  `mmo-cr-copilot-dashboard-tests-${process.env.ENVIRONMENT || 'local'}`
+
+const isLocalhost =
+  !process.env.DASHBOARD_BASE_URL ||
+  process.env.DASHBOARD_BASE_URL.includes('localhost') ||
+  process.env.DASHBOARD_BASE_URL.includes('127.0.0.1')
+const useBrowserstackLocal =
+  process.env.BROWSERSTACK_LOCAL !== undefined
+    ? process.env.BROWSERSTACK_LOCAL === 'true'
+    : isLocalhost
 
 export const config = {
   //
   // ====================
   // Runner Configuration
   // ====================
-  // WebdriverIO supports running e2e tests as well as unit and component tests.
   runner: 'local',
-  //
-  // Set a base URL in order to shorten url command calls. If your `url` parameter starts
-  // with `/`, the base url gets prepended, not including the path portion of your baseUrl.
-  // If your `url` parameter starts without a scheme or `/` (like `some/path`), the base url
-  // gets prepended directly.
-  baseUrl:
-    process.env.DASHBOARD_BASE_URL,
 
-  // You will need to provide your own BrowserStack credentials.
-  // These should be added as secrets to the test suite.
-  user: process.env.BROWSERSTACK_USER,
-  key: process.env.BROWSERSTACK_KEY,
+  //
+  // Set a base URL in order to shorten url command calls.
+  baseUrl:
+    process.env.DASHBOARD_BASE_URL ||
+    'https://mmo-cr-copilot-dashboard.dev.cdp-int.defra.cloud',
+
+  // BrowserStack credentials
+  user,
+  key,
 
   // Tests to run
   specs: ['./test/specs/**/*.js'],
-  // Tests to exclude
   exclude: [],
-  maxInstances: 1,
+  maxInstances: 5,
 
+  // BrowserStack common capabilities applied to all browsers
   commonCapabilities: {
     'bstack:options': {
-      buildName: `mmo-cr-copilot-dashboard-tests-${process.env.ENVIRONMENT}` // configure as required
+      projectName,
+      buildName,
+      debug: true,
+      networkLogs: true,
+      consoleLogs: 'info'
     }
   },
 
+  // Target browsers / devices
   capabilities: [
     {
-      browserName: 'Chrome', // Set as required
+      browserName: 'chrome',
       'bstack:options': {
         browserVersion: 'latest',
         os: 'Windows',
@@ -54,38 +67,44 @@ export const config = {
     [
       'browserstack',
       {
-        testObservability: true, // Disable if you do not want to use the browserstack test observer functionality
+        testObservability: true,
         testObservabilityOptions: {
-          user: process.env.BROWSERSTACK_USER,
-          key: process.env.BROWSERSTACK_KEY,
-          projectName: 'cdp-node-env-test-suite', // should match project in browserstack
-          buildName: `mmo-cr-copilot-dashboard-tests-${process.env.ENVIRONMENT}`
+          user,
+          key,
+          projectName,
+          buildName
         },
         acceptInsecureCerts: true,
-        forceLocal: false,
-        browserstackLocal: true,
-        opts: {
-          proxyHost: 'localhost',
-          proxyPort: 3128
-        }
+        browserstackLocal: useBrowserstackLocal,
+        ...(process.env.PROXY_HOST
+          ? {
+              opts: {
+                proxyHost: process.env.PROXY_HOST,
+                proxyPort: process.env.PROXY_PORT || 3128
+              }
+            }
+          : {})
       }
     ]
   ],
 
   logLevel: 'info',
 
+  logLevels: {
+    webdriver: 'error'
+  },
+
   // Number of failures before the test suite bails.
   bail: 0,
   waitforTimeout: 10000,
   waitforInterval: 200,
-  connectionRetryTimeout: 6000,
+  connectionRetryTimeout: 120000,
   connectionRetryCount: 3,
 
   framework: 'mocha',
 
   reporters: [
     [
-      // Spec reporter provides rolling output to the logger so you can see it in-progress
       'spec',
       {
         addConsoleLogs: true,
@@ -94,7 +113,6 @@ export const config = {
       }
     ],
     [
-      // Allure is used to generate the final HTML report
       'allure',
       {
         outputDir: 'allure-results'
@@ -103,7 +121,6 @@ export const config = {
   ],
 
   // Options to be passed to Mocha.
-  // See the full list at http://mochajs.org/
   mochaOpts: {
     ui: 'bdd',
     timeout: oneMinute
@@ -123,3 +140,4 @@ export const config = {
     }
   }
 }
+

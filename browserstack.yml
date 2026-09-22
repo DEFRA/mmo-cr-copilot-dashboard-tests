@@ -1,0 +1,27 @@
+# BrowserStack SDK configuration for Playwright
+# Credentials are read from the environment (BROWSERSTACK_USERNAME / BROWSERSTACK_ACCESS_KEY).
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+projectName: MMO Catch Recording Copilot Dashboard
+buildName: mmo-cr-copilot-dashboard-playwright
+buildIdentifier: '#${BUILD_NUMBER}'
+
+# Target browsers / platforms
+platforms:
+  - os: Windows
+    osVersion: 11
+    browserName: chrome
+    browserVersion: latest
+
+# Run in parallel across the platforms above
+parallelsPerPlatform: 1
+
+# Route the cloud browser through this machine to reach the internal CDP host.
+browserStackLocal: true
+
+# Reporting / debugging
+debug: true
+networkLogs: true
+consoleLogs: info
+testObservability: true
