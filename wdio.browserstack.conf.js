@@ -69,7 +69,6 @@ export const config = {
           buildName: `mmo-cr-copilot-dashboard-tests-${process.env.ENVIRONMENT}`
         },
         acceptInsecureCerts: true,
-        forceLocal: false,
         browserstackLocal: true,
         opts: {
           proxyHost: 'localhost',
