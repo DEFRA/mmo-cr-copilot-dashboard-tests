@@ -45,6 +45,7 @@ The suite runs against the deployed dashboard, so nothing needs to be started lo
 ```bash
 npm run test:local
 ```
+
 Point the env variable somewhere else with
 `DASHBOARD_BASE_URL`, which every wdio config honours:
 

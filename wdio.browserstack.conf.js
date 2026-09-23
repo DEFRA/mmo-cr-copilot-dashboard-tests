@@ -1,9 +1,17 @@
 import fs from 'node:fs'
+import { ProxyAgent, setGlobalDispatcher } from 'undici'
+import { bootstrap } from 'global-agent'
 
-/**
- * Proxy enabled using NODE_USE_ENV_PROXY=1
- * This is required for the test suite to be able to talk to BrowserStack.
- */
+// Routes webdriver.io through the CDP outbound proxy so it can reach BrowserStack.
+// Guarded because HTTP_PROXY is absent locally and ProxyAgent throws on an undefined uri.
+if (process.env.HTTP_PROXY) {
+  const dispatcher = new ProxyAgent({
+    uri: process.env.HTTP_PROXY
+  })
+  setGlobalDispatcher(dispatcher)
+  bootstrap()
+  global.GLOBAL_AGENT.HTTP_PROXY = process.env.HTTP_PROXY
+}
 
 const oneMinute = 60 * 1000
 
@@ -19,8 +27,7 @@ export const config = {
   // with `/`, the base url gets prepended, not including the path portion of your baseUrl.
   // If your `url` parameter starts without a scheme or `/` (like `some/path`), the base url
   // gets prepended directly.
-  baseUrl:
-    process.env.DASHBOARD_BASE_URL,
+  baseUrl: process.env.DASHBOARD_BASE_URL,
 
   // You will need to provide your own BrowserStack credentials.
   // These should be added as secrets to the test suite.
@@ -58,7 +65,7 @@ export const config = {
         testObservabilityOptions: {
           user: process.env.BROWSERSTACK_USER,
           key: process.env.BROWSERSTACK_KEY,
-          projectName: 'cdp-node-env-test-suite', // should match project in browserstack
+          projectName: 'mmo-cr-copilot-dashboard-tests', // should match project in browserstack
           buildName: `mmo-cr-copilot-dashboard-tests-${process.env.ENVIRONMENT}`
         },
         acceptInsecureCerts: true,
